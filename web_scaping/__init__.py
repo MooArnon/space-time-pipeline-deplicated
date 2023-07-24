@@ -1,0 +1,1 @@
+from web_scaping.web_scraping import ScrapePrice

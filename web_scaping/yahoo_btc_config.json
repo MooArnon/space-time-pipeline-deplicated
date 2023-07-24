@@ -1,0 +1,14 @@
+{
+    "url": "https://finance.yahoo.com/quote/BTC-USD?p=BTC-USD&.tsrc=fin-srch&guccounter=1",
+    "header": {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36"
+    },
+    "price_element":{
+        "java_class": {
+            "class_name": "fin-streamer",
+            "class": {"class": "Fw(b) Fz(36px) Mb(-4px) D(ib)"}
+        },
+        "tag_name": "value"
+    }
+
+}
