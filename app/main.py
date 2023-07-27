@@ -1,7 +1,17 @@
+#--------#
+# Import #
+#----------------------------------------------------------------------------#
+import time
+from datetime import datetime
+
 import schedule
 
 from scraping import ScrapePrice
 from db import DatabaseInsertion
+
+#----------#
+# function #
+#----------------------------------------------------------------------------#
 
 def scrap_data():
     
@@ -9,11 +19,35 @@ def scrap_data():
 
     price = obj.get_price()
     
+    if not price:
+        
+        time.sleep(60)
+        
+        price = obj.get_price()
+    
     db = DatabaseInsertion()
 
     db.insert_data(
         element=("app, price"),
-        data = ("BTC", price)
+        data = ("test_03", price)
     )
+
+#-------------------#
+# Schedule variable #
+#----------------------------------------------------------------------------#
+
+schedule.every().hour.at(":00").do(scrap_data)
+
+now = datetime.now()
+
+#-------------#
+# Main running #
+#----------------------------------------------------------------------------#
+
+if __name__ == "__main__":
     
-scrap_data()
+    print(f"Running engine at {now.strftime('%H:%M:%S')}")
+    
+    while True:
+        schedule.run_pending()
+        time.sleep(1)
