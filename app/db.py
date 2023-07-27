@@ -41,19 +41,14 @@ class DatabaseInsertion:
         
         data = tuple([self.current_timestamp] + list(data))
         
-        print("#########################################################")
-        print(sql)
-        
-        print("#########################################################")
         print(data)
         
         cursor.execute(sql, data)
 
         self.db.commit()
 
-        print(cursor.rowcount, "record inserted.")
+        print(cursor.rowcount, "record inserted. \n")
 
-    
     #------------------------------------------------------------------------#
     
     @staticmethod
@@ -69,4 +64,3 @@ class DatabaseInsertion:
     #------------------------------------------------------------------------#
     
 #----------------------------------------------------------------------------#
-        

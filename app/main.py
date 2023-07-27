@@ -29,7 +29,7 @@ def scrap_data():
 
     db.insert_data(
         element=("app, price"),
-        data = ("test_03", price)
+        data = ("test_04", price)
     )
 
 #-------------------#
