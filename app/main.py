@@ -91,7 +91,7 @@ def scrap_data():
 
     db.insert_data(
         element=("app, price"),
-        data = ("test_04", price)
+        data = ("btc", price)
     )
 
 #----------------------------------------------------------------------------#
