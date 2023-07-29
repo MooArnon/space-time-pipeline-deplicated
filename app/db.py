@@ -3,6 +3,7 @@ from datetime import datetime
 
 from dotenv import load_dotenv
 import mysql.connector
+import pandas as pd
 
 
 class DatabaseInsertion:
@@ -23,8 +24,12 @@ class DatabaseInsertion:
         if self.db:
             
             print("The connection is success")
-        
+    
+    #-----------#
+    # Insertion #
     #------------------------------------------------------------------------#
+    # Main #
+    #------#
     
     def insert_data(self, element: tuple, data: tuple):
         
@@ -48,8 +53,15 @@ class DatabaseInsertion:
         self.db.commit()
 
         print(cursor.rowcount, "record inserted. \n")
+        
+        if cursor:
+            cursor.close()
+        if self.db:
+            self.db.close()
 
     #------------------------------------------------------------------------#
+    # Function in use #
+    #-----------------#
     
     @staticmethod
     def create_insertion_element(element: str):
@@ -60,6 +72,45 @@ class DatabaseInsertion:
         placeholders = ", ".join(["%s"] * num_placeholders)
 
         return f"({placeholders})"
+    
+    #---------#
+    # Extract #
+    #------------------------------------------------------------------------#
+    
+    def extract_data(self, table_name: str, number_row: int):
+        
+        try:
+            
+            cursor = self.db.cursor()
+
+            # Sample query to select data from a table
+            query = f"""
+                SELECT * 
+                FROM {table_name} 
+                ORDER BY id DESC 
+                LIMIT {number_row};
+            """
+
+            # Execute the query
+            cursor.execute(query)
+
+            # Fetch all rows of the result
+            rows = cursor.fetchall()
+            
+            column_names = [i[0] for i in cursor.description]
+            df = pd.DataFrame(rows, columns=column_names)
+
+        except mysql.connector.Error as err:
+            print(f"Error: {err}")
+
+        finally:
+            # Close the cursor and connection
+            if cursor:
+                cursor.close()
+            if self.db:
+                self.db.close()
+                
+            return df
     
     #------------------------------------------------------------------------#
     
