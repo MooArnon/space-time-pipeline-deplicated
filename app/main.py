@@ -3,16 +3,17 @@
 #----------------------------------------------------------------------------#
 
 import os
+import time
+from datetime import datetime
 
 # Import FastAPI
 from fastapi import FastAPI, HTTPException
-
-# Import other modules as needed
-import time
-from datetime import datetime
 import schedule
+
+
 from app.scraping import ScrapePrice
 from app.db import DatabaseInsertion
+
 
 #----------#
 # Variable #
@@ -74,7 +75,11 @@ def root():
             "Check-status": "Loop-status"
             }
 
+#-----------------#
+# Function in use #
 #----------------------------------------------------------------------------#
+# Scrape data #
+#-------------#
 
 def scrap_data():
     obj = ScrapePrice(os.path.join("app", "yahoo_btc_config.json"))
@@ -94,11 +99,16 @@ def scrap_data():
         data = ("btc", price)
     )
 
+#----------#
+# Schedule #
 #----------------------------------------------------------------------------#
 
 schedule.every().hour.at(":00").do(scrap_data)
-
 now = datetime.now()
+
+#--------#
+# Freeze #
+#----------------------------------------------------------------------------#
 
 # Your existing main running block remains unchanged
 if __name__ == "__main__":
