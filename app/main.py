@@ -119,9 +119,18 @@ def write_prediction() -> None:
     
     df = db.extract_data("pipeline_db", input_shape_nn)
     
-    predict, model_type = predict_nn(df)
+    print(df.head())
     
-    partitionkey = df["partitionkey"].to_list()[-1]
+    # Price lst
+    price_lst = df["price"].tolist()
+    price_lst.reverse()
+    
+    partitionkey_lst = df["partitionkey"].tolist()
+    partitionkey_lst.reverse()
+    
+    predict, model_type = predict_nn(price_lst)
+    
+    partitionkey = partitionkey_lst[-1]
     
     app = df["app"].to_list()[-1]
     
@@ -134,15 +143,11 @@ def write_prediction() -> None:
 
 #----------------------------------------------------------------------------#
 
-def predict_nn(df: pd.DataFrame) -> float:
+def predict_nn(price_lst: pd.Series) -> float:
     
     global model_nn, input_shape_nn
     
     model_type = "nn"
-    
-    price_lst = df["price"].tolist()
-    
-    price_lst.reverse()
 
     feature = torch.tensor([price_lst[-input_shape_nn:]])
     
