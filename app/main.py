@@ -107,6 +107,8 @@ def scrap_data():
         element=("app, price"),
         data = ("btc", price)
     )
+    
+    write_prediction()
 #----------------------------------------------------------------------------#
 # Prediction #
 #------------#
@@ -129,8 +131,6 @@ def write_prediction() -> None:
         element = ('partitionkey, app, model, prediction'),
         data = data
     )
-    
-    
 
 #----------------------------------------------------------------------------#
 
