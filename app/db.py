@@ -1,4 +1,6 @@
 import os
+import random
+import string
 from datetime import datetime
 
 from dotenv import load_dotenv
@@ -10,16 +12,24 @@ class DatabaseInsertion:
     
     def __init__(self) -> None:
         
-        load_dotenv()
+        self.connect_2_db()
         
-        self.db = mysql.connector.connect(
-            host=os.getenv("MYSQL_HOST"),
-            user=os.getenv("MYSQL_USER"),
-            password=os.getenv("MYSQL_PASSWORD"),
-            database=os.getenv("MYSQL_DB"),
+        current_timestamp_raw = datetime.now()
+        
+        self.current_timestamp = current_timestamp_raw.strftime(
+            "%Y-%m-%d %H:%M:%S"
         )
         
-        self.current_timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        current_timestamp_key = current_timestamp_raw.strftime(
+            "%Y%m%d%H%M%S"
+        )
+        
+        characters = string.ascii_letters + string.digits
+        random_str = ''.join(
+            random.choice(characters) for _ in range(10)
+        )
+        
+        self.partitionkey = "_".join([current_timestamp_key, random_str])
         
         if self.db:
             
@@ -35,7 +45,7 @@ class DatabaseInsertion:
         
         cursor = self.db.cursor()
         
-        element = f"(date, {element})"
+        element = f"(date, {element}, partitionkey)"
         
         tuple(["date"] + list(element))
 
@@ -44,9 +54,11 @@ class DatabaseInsertion:
             VALUES {self.create_insertion_element(element)};
         """
         
-        data = tuple([self.current_timestamp] + list(data))
+        data = tuple(
+            [self.current_timestamp] + list(data) + [self.partitionkey]
+        )
         
-        print(data)
+        print("raw data \n", data)
         
         cursor.execute(sql, data)
 
@@ -59,6 +71,41 @@ class DatabaseInsertion:
         if self.db:
             self.db.close()
 
+    #------------------------------------------------------------------------#
+    
+    def insert_prediction(self, element: tuple, data: tuple):
+        
+        try: 
+            cursor = self.db.cursor()
+            
+        except:
+            self.connect_2_db()
+            cursor = self.db.cursor()
+        
+        cursor = self.db.cursor()
+        
+        element = f"({element})"
+
+        sql = f"""
+            INSERT INTO prediction {element} 
+            VALUES {self.create_insertion_element(element)};
+        """
+
+        print("prediction \n", data)
+        
+        print(sql)
+        
+        cursor.execute(sql, data)
+
+        self.db.commit()
+
+        print(cursor.rowcount, "record inserted. \n")
+        
+        if cursor:
+            cursor.close()
+        if self.db:
+            self.db.close()
+            
     #------------------------------------------------------------------------#
     # Function in use #
     #-----------------#
@@ -73,6 +120,19 @@ class DatabaseInsertion:
 
         return f"({placeholders})"
     
+    #------------------------------------------------------------------------#
+    
+    def connect_2_db(self) -> None:
+        
+        load_dotenv()
+        
+        self.db = mysql.connector.connect(
+            host=os.getenv("MYSQL_HOST"),
+            user=os.getenv("MYSQL_USER"),
+            password=os.getenv("MYSQL_PASSWORD"),
+            database=os.getenv("MYSQL_DB"),
+        )
+        
     #---------#
     # Extract #
     #------------------------------------------------------------------------#

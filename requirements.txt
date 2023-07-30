@@ -1,3 +1,4 @@
+git+https://github.com/MooArnon/space-time-modeling.git
 beautifulsoup4~=4.12.2
 bs4~=0.0.1
 certifi~=2023.5.7
@@ -5,9 +6,12 @@ mysql-connector-python~=8.1.0
 pydantic~=2.0.3
 python-dotenv~=1.0.0
 python-stdnum~=1.18
+pandas~=2.0.3
 requests~=2.31.0
 requests-file~=1.5.1
 schedule~=1.2.0
 uvicorn~=0.23.1
 fastapi~=0.100.0
 uvicorn~=0.23.0
+torch~=2.0.1
+pytest

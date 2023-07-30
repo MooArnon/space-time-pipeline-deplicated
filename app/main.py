@@ -9,7 +9,8 @@ from datetime import datetime
 # Import FastAPI
 from fastapi import FastAPI, HTTPException
 import schedule
-
+import torch
+import pandas as pd
 
 from app.scraping import ScrapePrice
 from app.db import DatabaseInsertion
@@ -24,6 +25,14 @@ app = FastAPI()
 
 # Add a global variable to keep track of whether the loop is running or not
 loop_running = False
+
+# NN model
+model_nn = torch.load(
+    os.path.join(
+        "etc", "secrets", "model", "NN_btc-hourly__20230729_180557.pth"
+    )
+)
+input_shape_nn = model_nn.state_dict()['linears.0.weight'].shape[1]
 
 #------------#
 # API things #
@@ -98,6 +107,46 @@ def scrap_data():
         element=("app, price"),
         data = ("btc", price)
     )
+#----------------------------------------------------------------------------#
+# Prediction #
+#------------#
+
+def write_prediction() -> None:
+    
+    db = DatabaseInsertion()
+    
+    df = db.extract_data("pipeline_db", input_shape_nn)
+    
+    predict, model_type = predict_nn(df)
+    
+    partitionkey = df["partitionkey"].to_list()[-1]
+    
+    app = df["app"].to_list()[-1]
+    
+    data = tuple([partitionkey] + [app] +[model_type] + [predict])
+    
+    db.insert_prediction(
+        element = ('partitionkey, app, model, prediction'),
+        data = data
+    )
+    
+    
+
+#----------------------------------------------------------------------------#
+
+def predict_nn(df: pd.DataFrame) -> float:
+    
+    global model_nn, input_shape_nn
+    
+    model_type = "nn"
+    
+    price_lst = df["price"].tolist()
+    
+    price_lst.reverse()
+
+    feature = torch.tensor([price_lst[-input_shape_nn:]])
+    
+    return model_nn(feature).item(), model_type
 
 #----------#
 # Schedule #
@@ -113,6 +162,10 @@ now = datetime.now()
 # Your existing main running block remains unchanged
 if __name__ == "__main__":
     print(f"Running engine at {now.strftime('%H:%M:%S')}")
+    
+    """ SCRAPE AND INSERT
     while True:
         schedule.run_pending()
         time.sleep(1)
+    """
+    write_prediction()

@@ -162,3 +162,5 @@ cython_debug/
 db_config/
 
 app/resources/model
+
+etc/
