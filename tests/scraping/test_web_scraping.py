@@ -1,8 +1,10 @@
-from web_scaping import ScrapePrice
+import os
+
+from app.scraping import ScrapePrice
 
 def test_type_scraping():
 
-    obj = ScrapePrice(r"web_scaping/yahoo_btc_config.json")
+    obj = ScrapePrice(os.path.join("app", "yahoo_btc_config.json"))
 
     price = obj.get_price()
     

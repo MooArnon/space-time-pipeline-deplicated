@@ -1,8 +1,13 @@
 # from experiment.web_scaping import ScrapePrice
-from app.scraping import ScrapePrice
+from app.db import DatabaseInsertion
+from app.main import write_prediction
+"""
+db = DatabaseInsertion()
 
-sp = ScrapePrice(r"experiment\web_scaping\yahoo_btc_config.json")
+db.insert_data(
+        element=("app, price"),
+        data = ("btc", 9999999)
+    )
+"""
 
-price = sp.get_price()
-
-print(price)
+write_prediction()
