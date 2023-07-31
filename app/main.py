@@ -14,28 +14,42 @@ import pandas as pd
 
 from app.scraping import ScrapePrice
 from app.db import DatabaseInsertion
+from app.predict import Prediction
+from app.check_connection import check_db_connection
 
 
 #----------#
 # Variable #
 #----------------------------------------------------------------------------#
-
+# API #
+#-----#
 # Create a FastAPI instance
 app = FastAPI()
 
 # Add a global variable to keep track of whether the loop is running or not
 loop_running = False
 
-# NN model
-model_nn = torch.load(
-    os.path.join(
-        "etc", "secrets", "model", "NN_btc-hourly__20230729_180557.pth"
-    )
+#----------------------------------------------------------------------------#
+# Model #
+#----------#
+# NN model #
+#----------#
+path_model = os.path.join(
+    "etc", "secrets", "model", "NN_btc-hourly__20230729_180557.pth"
 )
-input_shape_nn = model_nn.state_dict()['linears.0.weight'].shape[1]
+
+model_nn = Prediction(path_model, "nn")
 
 #------------#
 # API things #
+#----------------------------------------------------------------------------#
+# Start Event with #
+#------------------#
+
+@app.on_event("startup")
+async def startup_event():
+    check_db_connection()
+
 #----------------------------------------------------------------------------#
 # Start & Stop #
 #--------------#
@@ -57,7 +71,19 @@ def stop_loop():
 
 #----------------------------------------------------------------------------#
 # Endpoint #
-#----------#
+#----------------#
+# Root end point #
+#----------------#
+# Endpoint to check the loop status
+@app.get("/")
+def root():
+    return {"Start-loop": "Go to /start-loop/ to run",
+            "Check-status": "loop-status"
+            }
+
+#----------------------------------------------------------------------------#
+# Loop things # 
+#-------------#
 
 # New endpoint to start the loop
 @app.post("/start-loop/")
@@ -77,15 +103,18 @@ def start_loop_endpoint():
 def loop_status():
     return {"loop_running": loop_running}
 
-# Endpoint to check the loop status
-@app.get("/")
-def root():
-    return {"Start-loop": "Go to /start-loop/ to run",
-            "Check-status": "Loop-status"
-            }
-
 #-----------------#
 # Function in use #
+#-----------------#
+# Main #
+#------#
+
+def main():
+    
+    scrap_data()
+    
+    write_prediction()
+
 #----------------------------------------------------------------------------#
 # Scrape data #
 #-------------#
@@ -108,51 +137,49 @@ def scrap_data():
         data = ("btc", price)
     )
     
-    write_prediction()
 #----------------------------------------------------------------------------#
 # Prediction #
 #------------#
 
 def write_prediction() -> None:
     
+    global model_nn
+    
     db = DatabaseInsertion()
     
-    df = db.extract_data("pipeline_db", input_shape_nn)
+    # Extract data from data base
+    df = db.extract_data("pipeline_db", model_nn.get_input_shape)
+
+    # Price lst
+    price_lst = df["price"].tolist()
+    price_lst.reverse()
     
-    predict, model_type = predict_nn(df)
+    # Partitionkey
+    partitionkey_lst = df["partitionkey"].tolist()
+    partitionkey_lst.reverse()
+    partitionkey = partitionkey_lst[-1]
     
-    partitionkey = df["partitionkey"].to_list()[-1]
-    
+    # App
     app = df["app"].to_list()[-1]
     
+    # Predict
+    predict, model_type = model_nn.predict(price_lst, "nn")
+    
+    # Convert data to tuple
     data = tuple([partitionkey] + [app] +[model_type] + [predict])
     
+    # Insert prediction to database
     db.insert_prediction(
         element = ('partitionkey, app, model, prediction'),
         data = data
     )
 
-#----------------------------------------------------------------------------#
-
-def predict_nn(df: pd.DataFrame) -> float:
-    
-    global model_nn, input_shape_nn
-    
-    model_type = "nn"
-    
-    price_lst = df["price"].tolist()
-    
-    price_lst.reverse()
-
-    feature = torch.tensor([price_lst[-input_shape_nn:]])
-    
-    return model_nn(feature).item(), model_type
 
 #----------#
 # Schedule #
 #----------------------------------------------------------------------------#
 
-schedule.every().hour.at(":00").do(scrap_data)
+schedule.every().hour.at(":00").do(main)
 now = datetime.now()
 
 #--------#
@@ -168,4 +195,4 @@ if __name__ == "__main__":
         schedule.run_pending()
         time.sleep(1)
     """
-    write_prediction()
+    # write_prediction()
