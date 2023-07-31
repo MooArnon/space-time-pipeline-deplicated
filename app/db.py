@@ -48,7 +48,7 @@ class DatabaseInsertion:
         element = f"(date, {element}, partitionkey)"
         
         tuple(["date"] + list(element))
-
+        
         sql = f"""
             INSERT INTO {os.getenv("MYSQL_TABLE")} {element} 
             VALUES {self.create_insertion_element(element)};
@@ -148,14 +148,14 @@ class DatabaseInsertion:
                 SELECT * 
                 FROM {table_name} 
                 ORDER BY id DESC 
-                LIMIT {number_row};
+                LIMIT {number_row}; 
             """
 
             # Execute the query
-            cursor.execute(query)
+            cursor.execute(query) 
 
             # Fetch all rows of the result
-            rows = cursor.fetchall()
+            rows = cursor.fetchall() 
             
             column_names = [i[0] for i in cursor.description]
             df = pd.DataFrame(rows, columns=column_names)
