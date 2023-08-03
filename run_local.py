@@ -3,10 +3,12 @@ import os
 
 from app.db import Database
 from app.predict import Prediction
-from experiment.model_db import load_model, insert_model
+
+from app.validate import validate_db
 
 db = Database()
 
+"""
 model = load_model("nn")
 
 print(type(model))
@@ -22,7 +24,7 @@ price_lst.reverse()
 result = model.predict(price_lst, "nn")
 
 print(result)
-
+"""
 """
 model = torch.load(
     os.path.join(
@@ -32,3 +34,7 @@ model = torch.load(
 
 insert_model(model, "nn")
 """
+
+df = db.extract_data("pipeline_db", 5)
+
+print(df.head(5))

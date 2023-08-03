@@ -4,13 +4,11 @@
 
 import os
 import time
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 
 # Import FastAPI
 from fastapi import FastAPI, HTTPException
 import schedule
-import torch
-import pandas as pd
 import pymongo
 from dotenv import load_dotenv
 
@@ -41,6 +39,8 @@ loop_running = False
 
 db = Database()
 
+tz = timezone(timedelta(hours = 7))
+
 #----------------------------------------------------------------------------#
 # Model #
 #-----------------#
@@ -59,9 +59,10 @@ collection = mongo_db["model"]
 # NN model #
 #----------#
 
+print("Loading nn model")
 model_nn = db.load_mongo_model("nn")
-
 model_nn = Prediction(model_nn, "nn")
+print(f"Loading completed {model_nn}")
 
 #------------#
 # API things #
@@ -126,15 +127,19 @@ def loop_status():
 
 def main():
     
-    scrap_data()
+    print("\nStart scrape data")
+    scrap_data("btc")
     
+    print("Start predict")
     write_prediction()
+    
+    print(f'Finish loop {datetime.now(tz=tz).isoformat(sep = " ")}')
 
 #----------------------------------------------------------------------------#
 # Scrape data #
 #-------------#
 
-def scrap_data():
+def scrap_data(app_name: str):
     
     global db
     
@@ -150,7 +155,7 @@ def scrap_data():
     
     db.insert_data(
         element=("app, price"),
-        data = ("btc", price)
+        data = (app_name, price)
     )
     
 #----------------------------------------------------------------------------#

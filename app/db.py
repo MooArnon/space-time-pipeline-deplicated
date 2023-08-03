@@ -1,7 +1,7 @@
 import os
 import random
 import string
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 
 from dotenv import load_dotenv
 import mysql.connector
@@ -16,10 +16,9 @@ class Database:
         
         self.connect_2_db()
         
-        if self.db and self.mongo_collection is not None:
-            print("DB is fully connected")
+        tz = timezone(timedelta(hours = 7))
         
-        current_timestamp_raw = datetime.now()
+        current_timestamp_raw = datetime.now(tz=tz)
         
         self.current_timestamp = current_timestamp_raw.strftime(
             "%Y-%m-%d %H:%M:%S"
@@ -47,6 +46,13 @@ class Database:
     #------#
     
     def insert_data(self, element: tuple, data: tuple):
+        
+        try: 
+            cursor = self.db.cursor()
+            
+        except:
+            self.connect_2_db()
+            cursor = self.db.cursor()
         
         cursor = self.db.cursor()
         
@@ -95,10 +101,6 @@ class Database:
             INSERT INTO prediction {element} 
             VALUES {self.create_insertion_element(element)};
         """
-
-        print("prediction \n", data)
-        
-        print(sql)
         
         cursor.execute(sql, data)
 
@@ -130,7 +132,6 @@ class Database:
     def connect_2_db(self) -> None:
         
         load_dotenv()
-        print(os.getenv("MYSQL_HOST"))
         
         self.db = mysql.connector.connect(
             host=os.getenv("MYSQL_HOST"),
@@ -151,39 +152,39 @@ class Database:
     #------------------------------------------------------------------------#
     
     def extract_data(self, table_name: str, number_row: int):
-        
-        try:
             
+        try: 
+            cursor = self.db.cursor()
+            
+        except:
+            self.connect_2_db()
             cursor = self.db.cursor()
 
-            # Sample query to select data from a table
-            query = f"""
-                SELECT * 
-                FROM {table_name} 
-                ORDER BY id DESC 
-                LIMIT {number_row}; 
-            """
+        # Sample query to select data from a table
+        query = f"""
+            SELECT * 
+            FROM {table_name} 
+            ORDER BY id DESC 
+            LIMIT {number_row}; 
+        """
 
-            # Execute the query
-            cursor.execute(query) 
+        # Execute the query
+        cursor.execute(query) 
 
-            # Fetch all rows of the result
-            rows = cursor.fetchall() 
+        # Fetch all rows of the result
+        rows = cursor.fetchall() 
+        
+        column_names = [i[0] for i in cursor.description]
+        df = pd.DataFrame(rows, columns=column_names)
+
+
+        # Close the cursor and connection
+        if cursor:
+            cursor.close()
+        if self.db:
+            self.db.close()
             
-            column_names = [i[0] for i in cursor.description]
-            df = pd.DataFrame(rows, columns=column_names)
-
-        except mysql.connector.Error as err:
-            print(f"Error: {err}")
-
-        finally:
-            # Close the cursor and connection
-            if cursor:
-                cursor.close()
-            if self.db:
-                self.db.close()
-                
-            return df
+        return df
     
     #-------#
     # Model #
