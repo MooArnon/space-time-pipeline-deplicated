@@ -14,4 +14,5 @@ uvicorn~=0.23.1
 fastapi~=0.100.0
 uvicorn~=0.23.0
 torch~=2.0.1
-pytest
+pytest~=7.4.0
+pymongo==4.4.1

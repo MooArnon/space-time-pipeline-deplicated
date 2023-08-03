@@ -11,18 +11,24 @@ from fastapi import FastAPI, HTTPException
 import schedule
 import torch
 import pandas as pd
+import pymongo
+from dotenv import load_dotenv
 
 from app.scraping import ScrapePrice
-from app.db import DatabaseInsertion
+from app.db import Database
 from app.predict import Prediction
-from app.check_connection import check_db_connection
-
 
 #----------#
 # Variable #
 #----------------------------------------------------------------------------#
 # API #
 #-----#
+
+load_dotenv()
+
+print("Connect to: ", os.getenv("MYSQL_HOST"),)
+print("At database name: ", os.getenv("MYSQL_DB"))
+
 # Create a FastAPI instance
 app = FastAPI()
 
@@ -30,26 +36,35 @@ app = FastAPI()
 loop_running = False
 
 #----------------------------------------------------------------------------#
+# Classes indication #
+#--------------------#
+
+db = Database()
+
+#----------------------------------------------------------------------------#
 # Model #
-#----------#
-# NN model #
-#----------#
-path_model = os.path.join(
-    "etc", "secrets", "model", "NN_btc-hourly__20230729_180557.pth"
+#-----------------#
+# Mongo parameter #
+#-----------------#
+
+# Save the model to MongoDB
+client = pymongo.MongoClient(
+    os.getenv("MONGO_CLIENT")
 )
 
-model_nn = Prediction(path_model, "nn")
+mongo_db = client["spaceTimePipeline"]
+collection = mongo_db["model"]
+
+#----------------------------------------------------------------------------#
+# NN model #
+#----------#
+
+model_nn = db.load_mongo_model("nn")
+
+model_nn = Prediction(model_nn, "nn")
 
 #------------#
 # API things #
-#----------------------------------------------------------------------------#
-# Start Event with #
-#------------------#
-
-@app.on_event("startup")
-async def startup_event():
-    check_db_connection()
-
 #----------------------------------------------------------------------------#
 # Start & Stop #
 #--------------#
@@ -120,6 +135,9 @@ def main():
 #-------------#
 
 def scrap_data():
+    
+    global db
+    
     obj = ScrapePrice(os.path.join("app", "yahoo_btc_config.json"))
 
     price = obj.get_price()
@@ -130,8 +148,6 @@ def scrap_data():
         
         price = obj.get_price()
     
-    db = DatabaseInsertion()
-
     db.insert_data(
         element=("app, price"),
         data = ("btc", price)
@@ -143,9 +159,7 @@ def scrap_data():
 
 def write_prediction() -> None:
     
-    global model_nn
-    
-    db = DatabaseInsertion()
+    global model_nn, db
     
     # Extract data from data base
     df = db.extract_data("pipeline_db", model_nn.get_input_shape)
@@ -173,7 +187,6 @@ def write_prediction() -> None:
         element = ('partitionkey, app, model, prediction'),
         data = data
     )
-
 
 #----------#
 # Schedule #
