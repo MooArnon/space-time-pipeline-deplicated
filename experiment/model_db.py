@@ -21,33 +21,30 @@ collection = db["model"]
 
 def insert_model(model, model_name):
     # Serialize the model's parameters using pickle and convert to BSON binary
-    model_parameters = pickle.dumps(model.state_dict())
-    binary_model_parameters = Binary(model_parameters)
+    model_byte = pickle.dumps(model)
+    
+    model_architecture = str(model)
 
     # Create a document and insert it into the collection
     model_document = {
         "name": model_name, 
-        "model_parameters": binary_model_parameters
+        "architecture": model_architecture,
+        "model": model_byte
     }
+    
     collection.insert_one(model_document)
 
 #----------------------------------------------------------------------------#
 
-def load_model(model_name):
+def load_mongo_model(model_name):
     
     if retrieved_model_document := collection.find_one(
         {"name": model_name}
     ):
-        model_parameters = pickle.loads(
-            retrieved_model_document["model_parameters"]
+        model = pickle.loads(
+            retrieved_model_document["model"]
         )
-        model.load_state_dict(model_parameters)
-
+        
     return model
 
-if __name__ == "__main__":
-    
-    model = load_model("nn")
-    
-    print(model)
-    
+#----------------------------------------------------------------------------#

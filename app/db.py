@@ -6,13 +6,18 @@ from datetime import datetime
 from dotenv import load_dotenv
 import mysql.connector
 import pandas as pd
+import pickle
+import pymongo
 
 
-class DatabaseInsertion:
+class Database:
     
     def __init__(self) -> None:
         
         self.connect_2_db()
+        
+        if self.db and self.mongo_collection is not None:
+            print("DB is fully connected")
         
         current_timestamp_raw = datetime.now()
         
@@ -125,6 +130,7 @@ class DatabaseInsertion:
     def connect_2_db(self) -> None:
         
         load_dotenv()
+        print(os.getenv("MYSQL_HOST"))
         
         self.db = mysql.connector.connect(
             host=os.getenv("MYSQL_HOST"),
@@ -132,6 +138,13 @@ class DatabaseInsertion:
             password=os.getenv("MYSQL_PASSWORD"),
             database=os.getenv("MYSQL_DB"),
         )
+        
+        mongo_client = pymongo.MongoClient(
+            os.getenv("MONGO_CLIENT")
+        )
+        
+        mongo_db = mongo_client["spaceTimePipeline"]
+        self.mongo_collection = mongo_db["model"]
         
     #---------#
     # Extract #
@@ -171,6 +184,23 @@ class DatabaseInsertion:
                 self.db.close()
                 
             return df
+    
+    #-------#
+    # Model #
+    #------------------------------------------------------------------------#
+    # Mongo #
+    #-------#
+
+    def load_mongo_model(self, model_name):
+    
+        if retrieved_model_document := self.mongo_collection.find_one(
+            {"name": model_name}
+        ):
+            model = pickle.loads(
+                retrieved_model_document["model"]
+            )
+            
+        return model
     
     #------------------------------------------------------------------------#
     
