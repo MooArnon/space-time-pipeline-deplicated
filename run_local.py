@@ -1,13 +1,34 @@
-# from experiment.web_scaping import ScrapePrice
-from app.db import DatabaseInsertion
-from app.main import write_prediction
-"""
-db = DatabaseInsertion()
+import torch
+import os
 
-db.insert_data(
-        element=("app, price"),
-        data = ("btc", 9999999)
+from app.db import Database
+from app.predict import Prediction
+from experiment.model_db import load_model, insert_model
+
+db = Database()
+
+model = load_model("nn")
+
+print(type(model))
+
+model = Prediction(model, "nn")
+
+df = db.extract_data("pipeline_db", model.get_input_shape)
+
+# Price lst
+price_lst = df["price"].tolist()
+price_lst.reverse()
+
+result = model.predict(price_lst, "nn")
+
+print(result)
+
+"""
+model = torch.load(
+    os.path.join(
+        "etc", "secrets", "model", "NN_btc-hourly__20230729_180557.pth"
     )
-"""
+)
 
-write_prediction()
+insert_model(model, "nn")
+"""

@@ -1,14 +1,23 @@
+from typing import Union
+
 import torch
 import pandas as pd
+from space_time_modeling.modeling.resources.nn import NNModel 
 
 class Prediction:
     
-    def __init__(self, path_model: str, type: str) -> None:
+    def __init__(self, model: Union[str, NNModel], type_model: str) -> None:
         
-        if type == 'nn':
+        if type_model == 'nn':
             
-            self.model = torch.load(path_model)
+            if isinstance(model, str):
+                
+                self.model = torch.load(model)
             
+            elif isinstance(model, NNModel):
+                
+                self.model = model
+
     #------#
     # Main #
     #------------------------------------------------------------------------#
