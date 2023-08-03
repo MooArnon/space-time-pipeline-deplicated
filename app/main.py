@@ -39,8 +39,6 @@ loop_running = False
 
 db = Database()
 
-tz = timezone(timedelta(hours = 7))
-
 #----------------------------------------------------------------------------#
 # Model #
 #-----------------#
@@ -133,7 +131,9 @@ def main():
     print("Start predict")
     write_prediction()
     
-    print(f'Finish loop {datetime.now(tz=tz).isoformat(sep = " ")}')
+    tz = timezone(timedelta(hours = 7))
+    
+    print(f'Finish loop {datetime.now(tz).isoformat(sep = " ")}')
 
 #----------------------------------------------------------------------------#
 # Scrape data #
@@ -141,7 +141,7 @@ def main():
 
 def scrap_data(app_name: str):
     
-    global db
+    db = Database()
     
     obj = ScrapePrice(os.path.join("app", "yahoo_btc_config.json"))
 
@@ -164,7 +164,9 @@ def scrap_data(app_name: str):
 
 def write_prediction() -> None:
     
-    global model_nn, db
+    global model_nn
+    
+    db = Database()
     
     # Extract data from data base
     df = db.extract_data("pipeline_db", model_nn.get_input_shape)
