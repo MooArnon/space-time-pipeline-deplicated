@@ -15,6 +15,7 @@ from dotenv import load_dotenv
 from app.scraping import ScrapePrice
 from app.db import Database
 from app.predict import Prediction
+from app.email_sending import EmailManagement
 
 #----------#
 # Variable #
@@ -38,10 +39,11 @@ loop_running = False
 #--------------------#
 
 db = Database()
+mail = EmailManagement()
 
-#----------------------------------------------------------------------------#
+#-------#
 # Model #
-#-----------------#
+#----------------------------------------------------------------------------#
 # Mongo parameter #
 #-----------------#
 
@@ -50,6 +52,7 @@ client = pymongo.MongoClient(
     os.getenv("MONGO_CLIENT")
 )
 
+# Get model's collection
 mongo_db = client["spaceTimePipeline"]
 collection = mongo_db["model"]
 
@@ -85,14 +88,14 @@ def stop_loop():
 
 #----------------------------------------------------------------------------#
 # Endpoint #
-#----------------#
-# Root end point #
-#----------------#
+#----------#
+# Root #
+#------#
 # Endpoint to check the loop status
 @app.get("/")
 def root():
     return {"Start-loop": "Go to /start-loop/ to run",
-            "Check-status": "loop-status"
+            "Loop is running": loop_running
             }
 
 #----------------------------------------------------------------------------#
@@ -110,36 +113,62 @@ def start_loop_endpoint():
     else:
         raise HTTPException(status_code=400, detail="Loop is already running.")
 
-#----------------------------------------------------------------------------#
-
-# Endpoint to check the loop status
-@app.get("/loop-status/")
-def loop_status():
-    return {"loop_running": loop_running}
-
 #-----------------#
 # Function in use #
-#-----------------#
+#----------------------------------------------------------------------------#
 # Main #
 #------#
 
 def main():
     
+    #-------------#
+    # Scrape data #
+    #------------------------------------------------------------------------#
     print("\nStart scrape data")
-    scrap_data("btc")
-    
+    app_name, present_price = scrap_data("btc")
+
+    #----------------#
+    # Run prediction #
+    #------------------------------------------------------------------------#
+    # run prediction
     print("Start predict")
-    write_prediction()
+    predict = write_prediction()
+
+    #------------#
+    # Send email #
+    #------------------------------------------------------------------------#
+    # Create app_element body
+    # Update app_element body
+    #! Temporary for the 
+    app_element = {
+        "app": app_name,
+        "present_price": present_price,
+        "next_price": predict,
+    }
     
+    # Get all users
+    user_df = db.extract_data(
+        table_name="user",
+        number_row=10,
+        condition="WHERE privilege NOT LIKE '%admin%'"
+    )
+
+    # Send email
+    mail.send_email(
+        sender_mail="space.time.pipeline@gmail.com",
+        user_df=user_df,
+        app_element=[app_element]
+    )
+
     tz = timezone(timedelta(hours = 7))
-    
+
     print(f'Finish loop {datetime.now(tz).isoformat(sep = " ")}')
 
 #----------------------------------------------------------------------------#
 # Scrape data #
 #-------------#
 
-def scrap_data(app_name: str):
+def scrap_data(app_name: str) -> float:
     
     db = Database()
     
@@ -158,6 +187,8 @@ def scrap_data(app_name: str):
         data = (app_name, price)
     )
     
+    return app_name, price
+    
 #----------------------------------------------------------------------------#
 # Prediction #
 #------------#
@@ -169,7 +200,11 @@ def write_prediction() -> None:
     db = Database()
     
     # Extract data from data base
-    df = db.extract_data("pipeline_db", model_nn.get_input_shape)
+    df = db.extract_data(
+        "pipeline_db", 
+        model_nn.get_input_shape,
+        condition=None
+    )
 
     # Price lst
     price_lst = df["price"].tolist()
@@ -194,12 +229,15 @@ def write_prediction() -> None:
         element = ('partitionkey, app, model, prediction'),
         data = data
     )
+    
+    return predict
 
 #----------#
 # Schedule #
 #----------------------------------------------------------------------------#
 
-schedule.every().hour.at(":00").do(main)
+# schedule.every().hour.at(":00").do(main)
+schedule.every(1).minutes.do(main)
 now = datetime.now()
 
 #--------#
@@ -210,9 +248,4 @@ now = datetime.now()
 if __name__ == "__main__":
     print(f"Running engine at {now.strftime('%H:%M:%S')}")
     
-    """ SCRAPE AND INSERT
-    while True:
-        schedule.run_pending()
-        time.sleep(1)
-    """
-    # write_prediction()
+    main()
