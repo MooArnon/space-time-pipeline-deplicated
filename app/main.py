@@ -236,8 +236,8 @@ def write_prediction() -> None:
 # Schedule #
 #----------------------------------------------------------------------------#
 
-# schedule.every().hour.at(":00").do(main)
-schedule.every(1).minutes.do(main)
+schedule.every().hour.at(":00").do(main)
+# schedule.every(1).minutes.do(main)
 now = datetime.now()
 
 #--------#
