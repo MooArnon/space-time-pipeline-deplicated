@@ -139,8 +139,8 @@ class EmailManagement:
         {app}:
         {"="*(len(app)+1)}
         PRESENT price is : {present_price}.
-        the price for the NEXT HOUR is: {next_price}.
-        With confidence: {100*(present_price - next_price)/present_price} %.
+        The price for the NEXT HOUR is: {next_price}.
+        Signal is: {100*(next_price - present_price)/present_price} %.
         
     """
     
