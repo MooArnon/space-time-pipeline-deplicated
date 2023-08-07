@@ -69,13 +69,13 @@ class Database:
             [self.current_timestamp] + list(data) + [self.partitionkey]
         )
         
-        print("raw data \n", data)
+        print("raw data: ", data)
         
         cursor.execute(sql, data)
 
         self.db.commit()
 
-        print(cursor.rowcount, "record inserted. \n")
+        print(cursor.rowcount, "raw data inserted.")
         
         if cursor:
             cursor.close()
@@ -106,7 +106,7 @@ class Database:
 
         self.db.commit()
 
-        print(cursor.rowcount, "record inserted. \n")
+        print( cursor.rowcount, "prediction inserted.")
         
         if cursor:
             cursor.close()
@@ -151,7 +151,12 @@ class Database:
     # Extract #
     #------------------------------------------------------------------------#
     
-    def extract_data(self, table_name: str, number_row: int):
+    def extract_data(
+            self, 
+            table_name: str, 
+            number_row: int,
+            condition: str
+    ):
             
         try: 
             cursor = self.db.cursor()
@@ -164,10 +169,11 @@ class Database:
         query = f"""
             SELECT * 
             FROM {table_name} 
+            {condition}
             ORDER BY id DESC 
-            LIMIT {number_row}; 
+            LIMIT {number_row}
+            ; 
         """
-
         # Execute the query
         cursor.execute(query) 
 
