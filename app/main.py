@@ -176,11 +176,17 @@ def scrap_data(app_name: str) -> float:
 
     price = obj.get_price()
     
-    if not price:
-        
-        time.sleep(60)
+    price = None
+    
+    while price is None: 
         
         price = obj.get_price()
+        
+        if price is None:
+            
+            time.sleep(60)
+            
+            print("Scraped error")
     
     db.insert_data(
         element=("app, price"),
