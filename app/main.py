@@ -56,7 +56,7 @@ def start_loop():
     global loop_running
     loop_running = True
     while True:
-        # schedule.run_pending()
+        schedule.run_pending()
         time.sleep(1)
 
 #----------------------------------------------------------------------------#
