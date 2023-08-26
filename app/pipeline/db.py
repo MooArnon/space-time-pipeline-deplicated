@@ -1,3 +1,7 @@
+#--------#
+# Import #
+#----------------------------------------------------------------------------#
+
 import os
 import random
 import string
@@ -8,114 +12,184 @@ import mysql.connector
 import pandas as pd
 import pickle
 import pymongo
+import torch
 
+load_dotenv()
 
-class Database:
+#-------#
+# Class #
+#----------------------------------------------------------------------------#
+# SQL Database #
+#--------------#
+
+class SQLDatabase:
     
-    def __init__(self) -> None:
+    def __init__(
+            self, 
+            host: str = os.getenv("MYSQL_HOST"),
+            user: str = os.getenv("MYSQL_USER"),
+            password: str = os.getenv("MYSQL_PASSWORD"),
+            database: str  = os.getenv("MYSQL_DB"), 
+    ) -> None:
         
-        self.connect_2_db()
+        # Connect the SQL database
+        self.connect_2_db(host, user, password, database)
         
+        # Show status
+        if self.db:
+            print("The connection is success")
+        
+        # Time zone
         tz = timezone(timedelta(hours = 7))
-        
         current_timestamp_raw = datetime.now(tz=tz)
         
+        # current_timestamp for database insertion
         self.current_timestamp = current_timestamp_raw.strftime(
             "%Y-%m-%d %H:%M:%S"
         )
         
+        # Get current_timestamp for partition key
         current_timestamp_key = current_timestamp_raw.strftime(
             "%Y%m%d%H%M%S"
         )
         
+        # Set range of random
+        # And random 10 character for partition key
         characters = string.ascii_letters + string.digits
         random_str = ''.join(
             random.choice(characters) for _ in range(10)
         )
         
+        # Join date time and random string
         self.partitionkey = "_".join([current_timestamp_key, random_str])
-        
-        if self.db:
-            
-            print("The connection is success")
-    
+
     #-----------#
     # Insertion #
     #------------------------------------------------------------------------#
     # Main #
     #------#
     
-    def insert_data(self, element: tuple, data: tuple):
+    def insert_data(self, element: tuple, data: tuple) -> None:
+        """ Insert data into the database
         
-        try: 
-            cursor = self.db.cursor()
-            
-        except:
-            self.connect_2_db()
-            cursor = self.db.cursor()
-        
-        cursor = self.db.cursor()
-        
+        Parameters
+        ----------
+        element: tuple
+            Insertion element
+        data: tuple
+            Data
+        """
+        # Create insertion statement
         element = f"(date, {element}, partitionkey)"
-        
         tuple(["date"] + list(element))
         
+        # Query statement
         sql = f"""
             INSERT INTO {os.getenv("MYSQL_TABLE")} {element} 
             VALUES {self.create_insertion_element(element)};
         """
         
+        # Create data
         data = tuple(
             [self.current_timestamp] + list(data) + [self.partitionkey]
         )
         
-        print("raw data: ", data)
-        
-        cursor.execute(sql, data)
-
+        # Execute query
+        self.cursor.execute(sql, data)
         self.db.commit()
 
-        print(cursor.rowcount, "raw data inserted.")
-        
-        if cursor:
-            cursor.close()
-        if self.db:
-            self.db.close()
+        print(self.cursor.rowcount, "raw data inserted.")
+        print("raw data: ", data)
 
     #------------------------------------------------------------------------#
     
-    def insert_prediction(self, element: tuple, data: tuple):
+    def insert_prediction(self, element: tuple, data: tuple) -> None:
+        """ Insert prediction into the target database
         
-        try: 
-            cursor = self.db.cursor()
-            
-        except:
-            self.connect_2_db()
-            cursor = self.db.cursor()
-        
-        cursor = self.db.cursor()
-        
+        Parameters
+        ----------
+        element: tuple
+            Insertion element
+        data: tuple
+            Data
+        """
+        # Create element
         element = f"({element})"
 
+        # Insertion query
         sql = f"""
             INSERT INTO prediction {element} 
             VALUES {self.create_insertion_element(element)};
         """
         
-        cursor.execute(sql, data)
-
+        # Execute the query
+        self.cursor.execute(sql, data)
         self.db.commit()
 
-        print( cursor.rowcount, "prediction inserted.")
+        print( self.cursor.rowcount, "prediction inserted.")
         
-        if cursor:
-            cursor.close()
+    #---------#
+    # Extract #
+    #------------------------------------------------------------------------#
+    
+    def extract_data(
+            self, 
+            table_name: str, 
+            number_row: int,
+            condition: str
+    ) -> pd.DataFrame:
+        """ Extract dat from database
+        
+        Parameters
+        ----------
+        table_name: str
+            The name of table
+        number_row: int
+            The number of row
+        condition: str
+            Where condition
+            
+        Returns
+        -------
+        pd.DataFrame
+            The extracted data-frame
+        """
+        # Sample query to select data from a table
+        query = f"""
+        SELECT *
+        FROM (
+            SELECT * 
+            FROM {table_name} 
+            {condition}
+            ORDER BY id DESC 
+            LIMIT {number_row}
+        ) as sub
+        ORDER BY id ASC
+        ; 
+        """
+        # Execute the query
+        self.cursor.execute(query) 
+
+        # Fetch all rows of the result
+        rows = self.cursor.fetchall() 
+
+        column_names = [i[0] for i in self.cursor.description]
+        
+        return pd.DataFrame(rows, columns=column_names)
+
+    #--------------------#
+    # Utilities function #
+    #------------------------------------------------------------------------#
+    
+    def  close_connection(self):
+        """Close the connection
+        """
+        if self.cursor:
+            self.cursor.close()
         if self.db:
             self.db.close()
-            
+    
     #------------------------------------------------------------------------#
-    # Function in use #
-    #-----------------#
     
     @staticmethod
     def create_insertion_element(element: str):
@@ -129,80 +203,96 @@ class Database:
     
     #------------------------------------------------------------------------#
     
-    def connect_2_db(self) -> None:
-        
-        load_dotenv()
+    def connect_2_db(
+            self,
+            host: str,
+            user: str,
+            password: str, 
+            database: str, 
+    ) -> None:
+        """Connect to the MySQL database, I use the default parameter
+        as a environment variable
+
+        Parameters
+        ----------
+        host : str, optional
+            Host name, 
+            by default os.getenv("MYSQL_HOST")
+        user : str, optional
+            User name, 
+            by default os.getenv("MYSQL_USER")
+        password : str, optional
+            Password of database, 
+            by default os.getenv("MYSQL_PASSWORD")
+        database : str, optional
+            The database name, 
+            by default os.getenv("MYSQL_DB")
+        """
         
         self.db = mysql.connector.connect(
-            host=os.getenv("MYSQL_HOST"),
-            user=os.getenv("MYSQL_USER"),
-            password=os.getenv("MYSQL_PASSWORD"),
-            database=os.getenv("MYSQL_DB"),
+            host=host, 
+            user=user, 
+            password=password, 
+            database=database
         )
         
-        mongo_client = pymongo.MongoClient(
-            os.getenv("MONGO_CLIENT")
-        )
+        self.cursor = self.db.cursor()
         
-        mongo_db = mongo_client["spaceTimePipeline"]
-        self.mongo_collection = mongo_db["model"]
-        
-    #---------#
-    # Extract #
     #------------------------------------------------------------------------#
     
-    def extract_data(
+
+    
+    #------------------------------------------------------------------------#
+    
+#----------------------------------------------------------------------------#
+
+#-------#
+# Class #
+#----------------------------------------------------------------------------#
+# Mongo Database #
+#----------------#
+
+class MongoDatabase:
+    
+    def __init__(
             self, 
-            table_name: str, 
-            number_row: int,
-            condition: str
-    ):
-            
-        try: 
-            cursor = self.db.cursor()
-            
-        except:
-            self.connect_2_db()
-            cursor = self.db.cursor()
-
-        # Sample query to select data from a table
-        query = f"""
-            SELECT * 
-            FROM {table_name} 
-            {condition}
-            ORDER BY id DESC 
-            LIMIT {number_row}
-            ; 
-        """
-        # Execute the query
-        cursor.execute(query) 
-
-        # Fetch all rows of the result
-        rows = cursor.fetchall() 
+            connection_string: str, 
+            db_name: str, 
+            collection_name: str    
+    ) -> None:
         
-        column_names = [i[0] for i in cursor.description]
-        df = pd.DataFrame(rows, columns=column_names)
-
-
-        # Close the cursor and connection
-        if cursor:
-            cursor.close()
-        if self.db:
-            self.db.close()
-            
-        return df
-    
-    #-------#
-    # Model #
+        # Get connection_string from service from MONGO_CLIENT
+        self.client = pymongo.MongoClient(connection_string)
+        self.mongo_db = self.client[db_name]
+        self.collection = self.mongo_db[collection_name]
+        
     #------------------------------------------------------------------------#
-    # Mongo #
-    #-------#
-
-    def load_mongo_model(self, model_name):
     
-        if retrieved_model_document := self.mongo_collection.find_one(
+    def disconnect(self):
+        """Close the MOngo connection
+        """
+        self.client.close()
+    
+    #------------------------------------------------------------------------#
+    
+    def load_mongo_model(self, model_name: str) -> torch.nn.Module:
+        """Load the machine learning model
+
+        Parameters
+        ----------
+        model_name : str
+            The name of model
+
+        Returns
+        -------
+        torch.module
+            The torch model
+        """
+        # Find the model
+        if retrieved_model_document := self.collection.find_one(
             {"name": model_name}
         ):
+            # Load model using pickle
             model = pickle.loads(
                 retrieved_model_document["model"]
             )
@@ -210,5 +300,5 @@ class Database:
         return model
     
     #------------------------------------------------------------------------#
-    
+
 #----------------------------------------------------------------------------#

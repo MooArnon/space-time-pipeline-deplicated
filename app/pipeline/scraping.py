@@ -4,11 +4,11 @@
 
 import requests
 import time
+from abc import abstractmethod
 
 from bs4 import BeautifulSoup
 
-from app.pipeline.config import PipelineConfig
-
+from app.pipeline.configs import PipelineConfig
 
 #---------#
 # Classes #
@@ -16,13 +16,32 @@ from app.pipeline.config import PipelineConfig
 
 class BaseScape:
     
+    @abstractmethod
+    def scrape(self) -> float:
+        """Scrape data
+
+        Returns
+        -------
+        float
+            The price
+
+        Raises
+        ------
+        Exception
+            NotImplementedError
+        """
+        raise NotImplementedError(
+            "It need to implement scrape at child class"
+        )
+    
 
 #----------------------------------------------------------------------------#
 
-class ScrapePrice:
+class BeautifulSoupEngine:
     
     def __init__(self) -> None:
         pass
+    
     #------------------------------------------------------------------------#
     
     def scrape(self) -> float:
@@ -33,17 +52,27 @@ class ScrapePrice:
         float
             Scraped price as float
         """
-        # Get page data
-        doc = self.get_page(PipelineConfig.URL, PipelineConfig.USER_AGENT)
-
-        # Find the price on page
-        tag = doc.find_all(
-            PipelineConfig.CLASS_NAME, 
-            PipelineConfig.CLASS
-        )[0]
+        price = None
         
-        # Get price from tag name
-        price = tag[PipelineConfig.TAG_NAME]
+        while price is None: 
+            
+            # Get page data
+            doc = self.get_page(PipelineConfig.URL, PipelineConfig.HEADER)
+
+            # Find the price on page
+            tag = doc.find_all(
+                PipelineConfig.CLASS_NAME, 
+                PipelineConfig.CLASS
+            )[0]
+            
+            # Get price from tag name
+            price = tag[PipelineConfig.TAG_NAME]
+            
+            if price is None:
+                
+                time.sleep(60)
+            
+                print("Scraped error")
 
         return float(price)
     
@@ -70,7 +99,7 @@ class ScrapePrice:
             Raise if failed to connect
         """
         # 
-        for _ in PipelineConfig.TRY_CONNECT:
+        for _ in range(PipelineConfig.TRY_CONNECT):
             
             # Get requirement
             req = requests.get(url, headers=header)

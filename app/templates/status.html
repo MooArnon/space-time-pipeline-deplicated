@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Loop status</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start; /* Align content to the top */
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        
+        img {
+            width: 500px; /* Adjust this value to your desired width */
+            height: auto; /* Maintain the aspect ratio */
+        }
+    </style>
+    <script>
+        // JavaScript code to modify background colors
+        document.addEventListener('DOMContentLoaded', function () {
+            const img = document.querySelector('img');
+            const loopRunning = {% if loop_running %}true{% else %}false{% endif %};
+
+            // Function to change the background colors dynamically
+            function changeBackground() {
+                if (loopRunning) {
+                    document.body.style.background = "linear-gradient(to bottom, rgba(76, 185, 111, 0.9), rgba(30, 250, 60, 0.3))";
+                    img.src = "{{ url_for('static', path='stonk.gif') }}";
+                } else {
+                    document.body.style.background = "linear-gradient(to bottom, rgba(250, 30, 20, 0.9), rgba(250, 30, 20, 0.3))";
+                    img.src = "{{ url_for('static', path='rest_dinosaur.gif') }}";
+                }
+            }
+
+            // Call the function to change background based on loop_running
+            changeBackground();
+        });
+    </script>
+</head>
+<body>
+    <h1>Space Time pipeline</h1>
+    <p>Machine status: {% if loop_running %}Runing{% else %}Resting{% endif %}</p>
+    <img src="{{ url_for('static', path='rest_dinosaur.gif') }}" alt="Example GIF">
+</body>
+</html>
