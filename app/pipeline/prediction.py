@@ -7,10 +7,8 @@ from typing import Union
 from abc import abstractmethod
 
 import torch
-import pymongo
 from space_time_modeling.modeling.resources.nn import NNModel 
 
-from app.pipeline import PipelineConfig
 from app.pipeline.db import MongoDatabase
 
 
