@@ -5,24 +5,32 @@
 import os
 import schedule
 import time
+import logging
 
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
-from app.pipeline import flow
-
 from fastapi import Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 
+from app.pipeline import flow
+
+load_dotenv()
+
 #----------#
 # Variable #
 #----------------------------------------------------------------------------#
 
-data_pipeline = flow
+logging.basicConfig(
+    level=logging.DEBUG, 
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S %Z', 
+    handlers=[logging.StreamHandler()],
+)
 
-schedule.every().hour.at(":00").do(data_pipeline)
-
+logger = logging.getLogger('space-time--pipeline')
 
 # Create a FastAPI instance
 app = FastAPI()
@@ -55,8 +63,15 @@ def status_page(request: Request):
 def start_loop():
     global loop_running
     loop_running = True
+    
+    data_pipeline = flow
+
+    schedule.every().hour.at(":00").do(
+        data_pipeline, logger
+    )
+
     while True:
-        # schedule.run_pending()
+        schedule.run_pending()
         time.sleep(1)
 
 #----------------------------------------------------------------------------#
@@ -80,3 +95,5 @@ def start_loop_endpoint():
 def get_loop_status():
     global loop_running
     return JSONResponse(content={"loop_running": loop_running})
+
+#----------------------------------------------------------------------------#

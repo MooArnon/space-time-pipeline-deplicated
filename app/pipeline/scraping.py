@@ -5,6 +5,7 @@
 import requests
 import time
 from abc import abstractmethod
+import logging
 
 from bs4 import BeautifulSoup
 
@@ -39,8 +40,9 @@ class BaseScape:
 
 class BeautifulSoupEngine:
     
-    def __init__(self) -> None:
-        pass
+    def __init__(self, logger: logging) -> None:
+        
+        self.logger = logger
     
     #------------------------------------------------------------------------#
     
@@ -72,7 +74,7 @@ class BeautifulSoupEngine:
                 
                 time.sleep(60)
             
-                print("Scraped error")
+                self.logger.error("Scraping error")
 
         return float(price)
     

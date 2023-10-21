@@ -2,12 +2,16 @@
 # Import #
 #----------------------------------------------------------------------------#
 
+import os
+
 import pandas as pd
 
-import os
+from dotenv import load_dotenv
 from email.message import EmailMessage
 import ssl
 import smtplib
+
+load_dotenv()
 
 #----------#
 # Classes #
