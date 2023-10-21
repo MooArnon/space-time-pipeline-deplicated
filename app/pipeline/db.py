@@ -6,6 +6,7 @@ import os
 import random
 import string
 from datetime import datetime, timezone, timedelta
+import logging
 
 from dotenv import load_dotenv
 import mysql.connector
@@ -30,14 +31,19 @@ class SQLDatabase:
             user: str = os.getenv("MYSQL_USER"),
             password: str = os.getenv("MYSQL_PASSWORD"),
             database: str  = os.getenv("MYSQL_DB"), 
+            logger: logging = None
     ) -> None:
+        
+        # Set log
+        if logger:
+            self.logger = logger
         
         # Connect the SQL database
         self.connect_2_db(host, user, password, database)
         
         # Show status
         if self.db:
-            print("The connection is success")
+            self.logger.info("DB connected")
         
         # Time zone
         tz = timezone(timedelta(hours = 7))
@@ -97,9 +103,9 @@ class SQLDatabase:
         # Execute query
         self.cursor.execute(sql, data)
         self.db.commit()
-
-        print(self.cursor.rowcount, "raw data inserted.")
-        print("raw data: ", data)
+        
+        self.logger.info(f"{self.cursor.rowcount} raw data inserted.")
+        self.logger.info(f"raw data: {data}")
 
     #------------------------------------------------------------------------#
     
@@ -125,8 +131,8 @@ class SQLDatabase:
         # Execute the query
         self.cursor.execute(sql, data)
         self.db.commit()
-
-        print( self.cursor.rowcount, "prediction inserted.")
+        
+        self.logger.info(f"{self.cursor.rowcount} prediction inserted.")
         
     #---------#
     # Extract #

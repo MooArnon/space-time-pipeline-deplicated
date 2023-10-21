@@ -4,6 +4,9 @@
 
 import os
 from datetime import datetime, timezone, timedelta
+import logging
+
+from dotenv import load_dotenv
 
 from app.pipeline import (
     BeautifulSoupEngine,
@@ -11,12 +14,13 @@ from app.pipeline import (
     DeepPrediction,
 )
 from app.pipeline.email_sending import EmailManagement
-from app.pipeline.configs import PipelineConfig
+
+load_dotenv()
 
 #----------------------------------------------------------------------------#
 
 
-def flow():
+def flow(logger: logging):
     """The flow controlling function.
     """
     #------------------#
@@ -24,7 +28,7 @@ def flow():
     #------------------------------------------------------------------------#
     
     # Scraper
-    scraper = BeautifulSoupEngine()
+    scraper = BeautifulSoupEngine(logger)
     
     # SQL database
     sql_db = SQLDatabase(
@@ -32,13 +36,13 @@ def flow():
         user = os.getenv("MYSQL_USER"),
         password = os.getenv("MYSQL_PASSWORD"),
         database = os.getenv("MYSQL_DB"), 
+        logger = logger
     )
     
     # Prediction
     prediction_nn = DeepPrediction("nn")
     
     mail = EmailManagement()
-    
     
     #------#
     # Flow #
@@ -52,7 +56,7 @@ def flow():
     # Insert scraped
     sql_db.insert_data(
         element=("app, price"),
-        data = (PipelineConfig.APP_NAME, price)
+        data = (os.getenv("APP_NAME"), price)
     )
     
     
@@ -62,7 +66,7 @@ def flow():
     
     # Extract data
     df_extracted = sql_db.extract_data(
-        table_name = PipelineConfig.RAW_TABLE,
+        table_name = os.getenv("MYSQL_TABLE"),
         number_row = prediction_nn.get_input_shape,
         condition = None
     )
@@ -105,14 +109,18 @@ def flow():
     )
     
     # Send email
-    mail.send_email(
-        sender_mail="space.time.pipeline@gmail.com",
-        user_df=user_df,
-        app_element=[app_element]
-    )
+    try:
+
+        mail.send_email(
+            sender_mail="space.time.pipeline@gmail.com",
+            user_df=user_df,
+            app_element=[app_element]
+        )
+        
+    except Exception as e:
+        pass
     
-    tz = timezone(timedelta(hours = 7))
-    print(f'Finish loop {datetime.now(tz).isoformat(sep = " ")}')
+    logger.info("FINISH LOOP")
     
     #------------------------------------------------------------------------#
     
