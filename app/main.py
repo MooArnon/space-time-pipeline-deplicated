@@ -35,10 +35,15 @@ app = FastAPI()
 #----------------------------------------------------------------------------#
 
 def pipeline_with_logger(logger):
-    try:
-        flow(logger)  # Call data_pipeline with the logger
-    except Exception as e:
-        logger.error(f"Error in data_pipeline: {str(e)}")
+    global pipeline_running
+    if not pipeline_running:
+        try:
+            pipeline_running = True
+            flow(logger)  # Call data_pipeline with the logger
+        except Exception as e:
+            logger.error(f"Error in data_pipeline: {str(e)}")
+        finally:
+            pipeline_running = False
 
 #----------------------------------------------------------------------------#
 
