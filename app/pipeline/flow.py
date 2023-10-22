@@ -3,7 +3,6 @@
 #----------------------------------------------------------------------------#
 
 import os
-from datetime import datetime, timezone, timedelta
 import logging
 
 from dotenv import load_dotenv
@@ -117,7 +116,8 @@ def flow(logger: logging):
             app_element=[app_element]
         )
         
-    except Exception as e:
+    # except Exception as e:
+    except:
         pass
     
     logger.info("FINISH LOOP")
