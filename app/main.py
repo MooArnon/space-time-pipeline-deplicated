@@ -5,71 +5,60 @@
 import os
 import schedule
 import time
+import threading
 import logging
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import JSONResponse
-from fastapi import Request
-from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
-from fastapi.staticfiles import StaticFiles
 
+from fastapi import FastAPI
 from app.pipeline import flow
-
-load_dotenv()
+from fastapi.responses import HTMLResponse
 
 #----------#
 # Variable #
 #----------------------------------------------------------------------------#
 
-logging.basicConfig(
+logging.basicConfig(  
     level=logging.DEBUG, 
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S %Z', 
-    handlers=[logging.StreamHandler()],
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 
-logger = logging.getLogger('space-time--pipeline')
+logger = logging.getLogger("space-time--pipeline")
+
+load_dotenv()
 
 # Create a FastAPI instance
 app = FastAPI()
 
-# Add a global variable to keep track of whether the loop is running 
-# or not
-loop_running = False
-
-app.mount(
-    "/static", 
-    StaticFiles(directory=os.path.join("app","static")), name="static"
-)
-templates = Jinja2Templates(directory=os.path.join("app", "templates"))
-
-#------#
-# Root #
-#----------------------------------------------------------------------------#
-
-# Show the status of machine 
-@app.get("/", response_class=HTMLResponse)
-def status_page(request: Request):
-    return templates.TemplateResponse(
-        "status.html", {"request": request, "loop_running": loop_running}
-    )
-    
 #----------#
 # Pipeline #
 #----------------------------------------------------------------------------#
 
+def pipeline_with_logger(logger):
+    try:
+        flow(logger)  # Call data_pipeline with the logger
+    except Exception as e:
+        logger.error(f"Error in data_pipeline: {str(e)}")
+
+#----------------------------------------------------------------------------#
+
+def assign_schedule(run_mode: str):
+
+    if run_mode == "prod":
+        schedule.every().hour.at(":00").do(pipeline_with_logger, logger)
+        logger.info("Using prod mode")
+        
+    elif run_mode == "dev":
+        schedule.every().minute.at(":00").do(pipeline_with_logger, logger)
+        logger.info("Using dev mode")
+
+    else:
+        raise ValueError(f"THERE ARE NO {run_mode} in program")
+
+#----------------------------------------------------------------------------#
+
 def start_loop():
-    global loop_running
-    loop_running = True
     
-    data_pipeline = flow
-
-    schedule.every().hour.at(":00").do(
-        data_pipeline, logger
-    )
-
     while True:
         schedule.run_pending()
         time.sleep(1)
@@ -78,22 +67,22 @@ def start_loop():
 
 @app.post("/start-loop/")
 def start_loop_endpoint():
-    if loop_running:
-        raise HTTPException(
-            status_code=400, 
-            detail="Loop is already running."
-        )
-    # Start the loop in a new thread to avoid blocking the API
-    import threading
+    
+    assign_schedule(os.getenv("RUN_MODE"))
+    
     threading.Thread(target=start_loop, daemon=True).start()
+    
     return {"message": "Loop started successfully."}
 
+#------#
+# Root #
 #----------------------------------------------------------------------------#
 
-# Endpoint to get the status of loop_running
-@app.get("/loop-status/")
-def get_loop_status():
-    global loop_running
-    return JSONResponse(content={"loop_running": loop_running})
+# Show the status of machine 
+@app.get("/", response_class=HTMLResponse)
+def status_page():
+    return {"API": "WORKED"}
 
-#----------------------------------------------------------------------------#
+if __name__ == "__main__":
+    
+    print("Wowza")
