@@ -30,6 +30,8 @@ load_dotenv()
 # Create a FastAPI instance
 app = FastAPI()
 
+pipeline_running = False
+
 #----------#
 # Pipeline #
 #----------------------------------------------------------------------------#
