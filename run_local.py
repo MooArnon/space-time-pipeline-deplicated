@@ -1,6 +1,6 @@
-from app.pipeline import flow
+from pipeline import BeautifulSoupEngine
 
-# Your existing main running block remains unchanged
 if __name__ == "__main__":
-    
-    flow()
+    bs_engine = BeautifulSoupEngine()
+    price = bs_engine.scrape()
+    print(f"THE PRICE IS {price}")

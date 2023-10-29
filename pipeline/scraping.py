@@ -9,7 +9,7 @@ import logging
 
 from bs4 import BeautifulSoup
 
-from app.pipeline.configs import PipelineConfig
+from pipeline.configs import PipelineConfig
 
 #---------#
 # Classes #
@@ -40,9 +40,10 @@ class BaseScape:
 
 class BeautifulSoupEngine:
     
-    def __init__(self, logger: logging) -> None:
+    def __init__(self, logger: logging = None) -> None:
         
-        self.logger = logger
+        if logger:
+            self.logger = logger
     
     #------------------------------------------------------------------------#
     
@@ -73,8 +74,9 @@ class BeautifulSoupEngine:
             if price is None:
                 
                 time.sleep(60)
-            
-                self.logger.error("Scraping error")
+
+                if self.logger:
+                    self.logger.error("Scraping error")
 
         return float(price)
     
