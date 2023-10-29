@@ -2,7 +2,7 @@
 # Import #
 #----------------------------------------------------------------------------#
 
-from app.pipeline import BeautifulSoupEngine
+from pipeline import BeautifulSoupEngine
 
 #-------#
 # Class #

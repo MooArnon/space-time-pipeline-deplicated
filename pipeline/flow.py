@@ -7,12 +7,12 @@ import logging
 
 from dotenv import load_dotenv
 
-from app.pipeline import (
+from pipeline import (
     BeautifulSoupEngine,
     SQLDatabase,
     DeepPrediction,
 )
-from app.pipeline.email_sending import EmailManagement
+from pipeline.email_sending import EmailManagement
 
 load_dotenv()
 
