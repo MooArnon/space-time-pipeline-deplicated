@@ -2,7 +2,7 @@
 # Import #
 #----------------------------------------------------------------------------#
 
-from pipeline import BeautifulSoupEngine
+from space_time_pipeline import BeautifulSoupEngine
 
 #-------#
 # Class #

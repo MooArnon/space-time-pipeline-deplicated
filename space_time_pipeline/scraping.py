@@ -9,7 +9,7 @@ import logging
 
 from bs4 import BeautifulSoup
 
-from pipeline.configs import PipelineConfig
+from space_time_pipeline.configs import PipelineConfig
 
 #---------#
 # Classes #

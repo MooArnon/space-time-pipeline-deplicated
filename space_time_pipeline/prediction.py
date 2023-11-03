@@ -9,9 +9,7 @@ from abc import abstractmethod
 import torch
 from space_time_modeling.modeling.resources.nn import NNModel 
 
-from pipeline.db import MongoDatabase
-
-
+from space_time_pipeline.db import MongoDatabase
 
 #---------#
 # Classes #
