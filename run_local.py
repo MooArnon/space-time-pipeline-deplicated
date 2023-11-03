@@ -1,4 +1,4 @@
-from pipeline import BeautifulSoupEngine
+from space_time_pipeline import BeautifulSoupEngine
 
 if __name__ == "__main__":
     bs_engine = BeautifulSoupEngine()
