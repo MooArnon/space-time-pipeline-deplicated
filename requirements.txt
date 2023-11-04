@@ -15,6 +15,6 @@ requests~=2.31.0
 urllib3~=2.0.7
 scipy~=1.11.3
 seaborn~=0.12.2
-git+https://github.com/MooArnon/space-time-modeling.git@b5de5d5c160473416cef64e87fed3315e8c83e68
+space_time_modeling @ git+https://github.com/MooArnon/space-time-modeling.git@b5de5d5c160473416cef64e87fed3315e8c83e68
 torch~=2.0.1
 urllib3~=2.0.7
