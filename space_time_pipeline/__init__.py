@@ -6,13 +6,12 @@ from space_time_pipeline.scraping import BeautifulSoupEngine
 from space_time_pipeline.configs import PipelineConfig
 from space_time_pipeline.db import SQLDatabase
 from space_time_pipeline.prediction import DeepPrediction
-from space_time_pipeline.flow import flow
-from space_time_pipeline.email_sending import EmailManagement
+from space_time_pipeline.notifier import LineNotifier
 
 #------------#
 # Properties #
 #----------------------------------------------------------------------------#
-__version__ = "1.0.0"
+__version__ = "2.0.0"
 __author__ = "Arnon Phongsiang" 
 __email__ = "arnon.phongsiang@gmail.com"
 __github__ = "https://github.com/MooArnon"
