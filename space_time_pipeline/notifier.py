@@ -58,8 +58,9 @@ class Notifier:
         {app_element['app']}
         {"-" * len_app}
         
-        {cal_element["signal"]} | {cal_element['confidence']}% confidence
+        {cal_element["signal"]} 
         
+        confidence = {cal_element['confidence']}
         present_price = {cal_element['present_price']}
         next_price = {cal_element['next_price']}
         """
@@ -88,7 +89,7 @@ class Notifier:
             "present_price": present_price,
             "next_price": next_price,
             "signal": signal,
-            "confidence": round(confidence, 2)
+            "confidence": round(confidence, 5)
         }
         
         return element
