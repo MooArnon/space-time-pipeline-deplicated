@@ -77,7 +77,7 @@ class DeepPrediction(BasePrediction):
     # Main #
     #------------------------------------------------------------------------#
     
-    def predict(self, price_lst: list, type: str):
+    def predict(self, price_lst: list, type: str) -> float:
         """ Run prediction
 
         Parameters
@@ -89,8 +89,8 @@ class DeepPrediction(BasePrediction):
 
         Returns
         -------
-        _type_
-            _description_
+        float
+            Predicted value
         """
         if type == "nn":
             
