@@ -88,7 +88,7 @@ class Notifier:
             "present_price": present_price,
             "next_price": next_price,
             "signal": signal,
-            "confidence": confidence
+            "confidence": round(confidence, 2)
         }
         
         return element
