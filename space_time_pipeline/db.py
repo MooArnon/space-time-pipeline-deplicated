@@ -86,8 +86,8 @@ class SQLDatabase:
             Data
         """
         # Create insertion statement
-        element = f"(date, {element}, partitionkey)"
-        tuple(["date"] + list(element))
+        element = f"(insert_datetime, {element}, partitionkey)"
+        tuple(["insert_datetime"] + list(element))
         
         # Query statement
         sql = f"""
