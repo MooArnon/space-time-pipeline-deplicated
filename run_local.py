@@ -1,15 +1,13 @@
-from space_time_pipeline.notifier import LineNotifier
+from space_time_pipeline import SQLDatabase
+import logging
+from dotenv import load_dotenv
 
-noti = LineNotifier()
+load_dotenv()
 
-present_price = 10
-next_price = 12
+logger = logging
 
-app_element = {
-    "app":"test",
-    "present_price": present_price,
-    "next_price": next_price
-}
+db = SQLDatabase(logger=logger)
 
+result = db.exec_sql_file(file_path="select.sql")
 
-noti.sent_message(app_element, "predict")
+print(result)
