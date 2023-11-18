@@ -7,6 +7,7 @@ import random
 import string
 from datetime import datetime, timezone, timedelta
 import logging
+from typing import Union
 
 from dotenv import load_dotenv
 import mysql.connector
@@ -33,17 +34,12 @@ class SQLDatabase:
             database: str  = os.getenv("MYSQL_DB"), 
             logger: logging = None
     ) -> None:
-        
-        # Set log
-        if logger:
-            self.logger = logger
-        
         # Connect the SQL database
         self.connect_2_db(host, user, password, database)
         
         # Show status
         if self.db:
-            self.logger.info("DB connected")
+            logger.info("DB connected")
         
         # Time zone
         tz = timezone(timedelta(hours = 7))
@@ -104,9 +100,6 @@ class SQLDatabase:
         self.cursor.execute(sql, data)
         self.db.commit()
         
-        self.logger.info(f"{self.cursor.rowcount} raw data inserted.")
-        self.logger.info(f"raw data: {data}")
-
     #------------------------------------------------------------------------#
     
     def insert_prediction(self, element: tuple, data: tuple) -> None:
@@ -131,8 +124,6 @@ class SQLDatabase:
         # Execute the query
         self.cursor.execute(sql, data)
         self.db.commit()
-        
-        self.logger.info(f"{self.cursor.rowcount} prediction inserted.")
         
     #---------#
     # Extract #
@@ -182,6 +173,119 @@ class SQLDatabase:
         column_names = [i[0] for i in self.cursor.description]
         
         return pd.DataFrame(rows, columns=column_names)
+    
+    #------------#
+    # Validation #
+    #------------------------------------------------------------------------#
+    # Check date #
+    #------------#
+    
+    def is_duplicated_insert(
+            self,
+            table_name: str, 
+            time_frame: str, 
+            date_column: str,
+        ) -> bool:
+        """Check whether or not the recent inserted record have 
+        the same present time, indicated timeframe as criterion.
+
+        Parameters
+        ----------
+        table_name : str
+            Name of target table
+        time_frame : str
+            `hourly` for layer of hour
+        date_column : str
+            Name of date of column
+        
+        Returns
+        -------
+        bool
+            whether or not the record is the same
+        """
+        # Current timestamp to criteria
+        criteria_current = self.convert_date_2_criteria(
+            date=self.current_timestamp,
+            criteria=time_frame,
+        )
+        
+        # Last record to criteria
+        last_record_date = self.extract_last_record(
+            table_name=table_name,
+            date_column=date_column,
+        )
+        criteria_last_record = self.convert_date_2_criteria(
+            date=last_record_date,
+            criteria=time_frame,
+        )
+        
+        # Check if the extracted data and current remain the same
+        if criteria_current == criteria_last_record:
+            result = True
+        else:
+            result=False
+        
+        return result
+    
+    #------------------------------------------------------------------------#
+    
+    def extract_last_record(
+        self, 
+        table_name: str, 
+        date_column: str,
+        ) -> datetime:
+        """Extract the last record from `table_name`.
+
+        Parameters
+        ----------
+        table_name : str
+            Name of target table
+
+        Returns
+        -------
+        pd.Series
+            Pandas series of last record.
+        """
+        query = f"""
+            SELECT {date_column} 
+            FROM {table_name}
+            ORDER BY {date_column} DESC
+        """
+        self.cursor.execute(query)
+        
+        # [0] is extracting the first data from tuple
+        # fetchone will always return tuple
+        # Since the query always returned only one value
+        date_recent_insert = self.cursor.fetchone()[0]
+        
+        return date_recent_insert
+        
+    
+    #------------------------------------------------------------------------#
+    
+    @staticmethod
+    def convert_date_2_criteria(date: Union[datetime, str], criteria: str) -> string:
+        """Convert input date-time object the the criteria
+
+        Parameters
+        ----------
+        date : datetime
+            Date-object
+        criteria : str
+            Target criteria
+
+        Returns
+        -------
+        string
+            String of result
+        """
+        if criteria == 'hourly':
+            date_format = "%Y-%m-%d %H"
+        
+        if isinstance(date, str):
+            date = datetime.strptime(date, '%Y-%m-%d %H:%M:%S')
+            
+        return date.strftime(date_format)
 
     #--------------------#
     # Utilities function #
@@ -243,10 +347,6 @@ class SQLDatabase:
         )
         
         self.cursor = self.db.cursor()
-        
-    #------------------------------------------------------------------------#
-    
-
     
     #------------------------------------------------------------------------#
     
