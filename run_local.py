@@ -8,6 +8,11 @@ logger = logging
 
 db = SQLDatabase(logger=logger)
 
-result = db.exec_sql_file(file_path="select.sql")
+element=('app, price'),
+data = ("HOTFIX", 0.0001)
 
-print(result)
+db.insert_data(
+    element=element,
+    data=data
+)
+

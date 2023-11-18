@@ -82,13 +82,13 @@ class SQLDatabase:
             Data
         """
         # Create insertion statement
-        element = f"(insert_datetime, {element}, partitionkey)"
-        tuple(["insert_datetime"] + list(element))
-        
+        element = ["insert_datetime"] + list(element) + ["partitionkey"]
+        element_sql = f"({', '.join(element)})"
+
         # Query statement
         sql = f"""
-            INSERT INTO {os.getenv("MYSQL_TABLE")} {element} 
-            VALUES {self.create_insertion_element(element)};
+            INSERT INTO {os.getenv("MYSQL_TABLE")} {element_sql} 
+            VALUES {self.create_insertion_element(element_sql)};
         """
         
         # Create data
