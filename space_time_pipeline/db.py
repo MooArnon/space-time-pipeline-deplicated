@@ -350,6 +350,28 @@ class SQLDatabase:
     
     #------------------------------------------------------------------------#
     
+    def exec_sql_file(self, file_path: str) -> pd.DataFrame:
+        """_summary_
+
+        Parameters
+        ----------
+        path : str
+            Path of .sql file
+
+        Returns
+        -------
+        tuple
+            result from fetching the cursor
+        """
+        # Read file
+        with open(file_path, 'r') as file:
+            query = file.read()
+            data = pd.read_sql_query(query, self.db)
+
+        return data
+        
+    #------------------------------------------------------------------------#
+
 #----------------------------------------------------------------------------#
 
 #-------#

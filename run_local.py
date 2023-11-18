@@ -8,10 +8,6 @@ logger = logging
 
 db = SQLDatabase(logger=logger)
 
-print(
-        db.is_duplicated_insert(
-            "pipeline_db",
-            time_frame='hourly',
-            date_column='insert_datetime',
-    )
-)
+result = db.exec_sql_file(file_path="select.sql")
+
+print(result)
