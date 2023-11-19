@@ -346,8 +346,6 @@ class SQLDatabase:
             user=user, 
             password=password, 
             database=database,
-            pool_name="mysql-pool",
-            pool_size=5
         )
         
         self.cursor = self.db.cursor()
