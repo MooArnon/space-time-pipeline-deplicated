@@ -58,11 +58,9 @@ def database_connection(func: callable):
 
 class SQLDatabase:
     
-    def __init__(
-            self, 
-            logger: logging = None
-    ) -> None:
-        
+    def __init__(self) -> None:
+        """Initiate SQLDatabase class
+        """
         # Time zone
         tz = timezone(timedelta(hours = 7))
         current_timestamp_raw = datetime.now(tz=tz)
@@ -275,15 +273,16 @@ class SQLDatabase:
             SELECT {date_column} 
             FROM {table_name}
             ORDER BY {date_column} DESC
+            LIMIT 1
         """
         self.cursor.execute(query)
         
         # [0] is extracting the first data from tuple
         # fetchone will always return tuple
         # Since the query always returned only one value
-        date_recent_insert = self.cursor.fetchone()[0]
+        date_recent_insert = self.cursor.fetchall()
         
-        return date_recent_insert
+        return date_recent_insert[0][0]
         
     
     #------------------------------------------------------------------------#
