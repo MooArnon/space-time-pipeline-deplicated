@@ -18,6 +18,38 @@ import torch
 
 load_dotenv()
 
+#------------#
+# Decorators #
+#------------------------------------------------------------------------#
+
+def database_connection(func: callable):
+    """Decorator function to manage the method that relevant
+    with the database operation
+
+    Parameters
+    ----------
+    func : callable
+        the target function
+    """
+    def wrapper(self, *args, **kwargs):
+        try:
+            
+            # Connect to db
+            self.connect_2_db(
+                host = os.getenv("MYSQL_HOST"),
+                user = os.getenv("MYSQL_USER"),
+                password = os.getenv("MYSQL_PASSWORD"),
+                database  = os.getenv("MYSQL_DB"),
+            )
+            
+            # Run the function
+            return func(self, *args, **kwargs)
+        
+        # Close connection of final process
+        finally:
+            self.close_connection()
+    return wrapper
+
 #-------#
 # Class #
 #----------------------------------------------------------------------------#
@@ -28,18 +60,8 @@ class SQLDatabase:
     
     def __init__(
             self, 
-            host: str = os.getenv("MYSQL_HOST"),
-            user: str = os.getenv("MYSQL_USER"),
-            password: str = os.getenv("MYSQL_PASSWORD"),
-            database: str  = os.getenv("MYSQL_DB"), 
             logger: logging = None
     ) -> None:
-        # Connect the SQL database
-        self.connect_2_db(host, user, password, database)
-        
-        # Show status
-        if self.db:
-            logger.info("DB connected")
         
         # Time zone
         tz = timezone(timedelta(hours = 7))
@@ -64,13 +86,13 @@ class SQLDatabase:
         
         # Join date time and random string
         self.partitionkey = "_".join([current_timestamp_key, random_str])
-
+        
     #-----------#
     # Insertion #
     #------------------------------------------------------------------------#
     # Main #
     #------#
-    
+    @database_connection
     def insert_data(self, element: tuple, data: tuple) -> None:
         """ Insert data into the database
         
@@ -102,6 +124,7 @@ class SQLDatabase:
         
     #------------------------------------------------------------------------#
     
+    @database_connection
     def insert_prediction(self, element: tuple, data: tuple) -> None:
         """ Insert prediction into the target database
         
@@ -129,11 +152,12 @@ class SQLDatabase:
     # Extract #
     #------------------------------------------------------------------------#
     
+    @database_connection
     def extract_data(
             self, 
             table_name: str, 
             number_row: int,
-            condition: str
+            condition: str = None,
     ) -> pd.DataFrame:
         """ Extract dat from database
         
@@ -180,6 +204,7 @@ class SQLDatabase:
     # Check date #
     #------------#
     
+    @database_connection
     def is_duplicated_insert(
             self,
             table_name: str, 
@@ -286,31 +311,9 @@ class SQLDatabase:
             date = datetime.strptime(date, '%Y-%m-%d %H:%M:%S')
             
         return date.strftime(date_format)
-
+    
     #--------------------#
     # Utilities function #
-    #------------------------------------------------------------------------#
-    
-    def  close_connection(self):
-        """Close the connection
-        """
-        if self.cursor:
-            self.cursor.close()
-        if self.db:
-            self.db.close()
-    
-    #------------------------------------------------------------------------#
-    
-    @staticmethod
-    def create_insertion_element(element: str):
-        
-        num_placeholders = len(element.split(","))
-        
-        # Repeat '%s' 'num_placeholders' times and join them with a space
-        placeholders = ", ".join(["%s"] * num_placeholders)
-
-        return f"({placeholders})"
-    
     #------------------------------------------------------------------------#
     
     def connect_2_db(
@@ -347,6 +350,28 @@ class SQLDatabase:
         )
         
         self.cursor = self.db.cursor()
+    
+    #------------------------------------------------------------------------#
+    
+    def  close_connection(self):
+        """Close the connection
+        """
+        if self.cursor:
+            self.cursor.close()
+        if self.db:
+            self.db.close()
+    
+    #------------------------------------------------------------------------#
+    
+    @staticmethod
+    def create_insertion_element(element: str):
+        
+        num_placeholders = len(element.split(","))
+        
+        # Repeat '%s' 'num_placeholders' times and join them with a space
+        placeholders = ", ".join(["%s"] * num_placeholders)
+
+        return f"({placeholders})"
     
     #------------------------------------------------------------------------#
     
