@@ -11,7 +11,7 @@ from space_time_pipeline.notifier import LineNotifier
 #------------#
 # Properties #
 #----------------------------------------------------------------------------#
-__version__ = "2.0.0"
+__version__ = "2.1.2"
 __author__ = "Arnon Phongsiang" 
 __email__ = "arnon.phongsiang@gmail.com"
 __github__ = "https://github.com/MooArnon"
