@@ -374,6 +374,7 @@ class SQLDatabase:
     
     #------------------------------------------------------------------------#
     
+    @database_connection
     def exec_sql_file(self, file_path: str) -> pd.DataFrame:
         """_summary_
 
