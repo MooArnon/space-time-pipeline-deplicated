@@ -3,9 +3,12 @@
 #----------------------------------------------------------------------------#
 
 import os
+from typing import Union
 
 import requests
 from dotenv import load_dotenv
+import pandas as pd
+import matplotlib.pyplot as plt
 
 load_dotenv()
 
@@ -38,7 +41,7 @@ class Notifier:
             [
                 {
                     "app": "<APP NAME>",
-                    "present_price": "<PRESENT PRICE>"
+                    "present_price": "<PRESENT PRICE>",
                     "next_price": "<PREDICTED PRICE>"
                 },
                 {
@@ -94,9 +97,48 @@ class Notifier:
         
         return element
         
-    
+    #-----------#
+    # Utilities #
     #------------------------------------------------------------------------#
 
+    @staticmethod
+    def convert_df_2_png(
+        df: pd.DataFrame, 
+        image_name: str,
+    ) -> None:
+        """Convert pandas.DataFrame to picture, exported 
+        to local machine
+
+        Parameters
+        ----------
+        df : pd.DataFrame
+            Target data-frame
+        """
+        # Create a figure and axis
+        fig, ax = plt.subplots()
+
+        # Hide the axes
+        ax.axis("off")
+
+        # Plot the table
+        ax.table(
+            cellText=df.values, 
+            colLabels=df.columns, 
+            cellLoc='center', 
+            loc='center'
+        )
+
+        # Save the figure as an image
+        plt.savefig(
+            image_name, 
+            dpi=300, 
+            bbox_inches='tight', 
+            pad_inches=0.05, 
+            transparent=True
+        )
+        
+    #------------------------------------------------------------------------#
+    
 #----------------------------------------------------------------------------#
 
 class LineNotifier(Notifier):
@@ -121,13 +163,15 @@ class LineNotifier(Notifier):
         """
         self.url = 'https://notify-api.line.me/api/notify'
         self.headers = {
-            'content-type':'application/x-www-form-urlencoded',
+            #'content-type':'application/x-www-form-urlencoded',
             'Authorization':'Bearer '+os.getenv("SIGNAL_NOTIFIER_TOKEN")
         }
     
+    #--------------#
+    # Sent message #
     #------------------------------------------------------------------------#
     
-    def sent_message(self, app_element: dict, mode: str) -> None:
+    def sent_message(self, app_element: Union[dict, str], mode: str) -> None:
         """Send message via line
         
         Parameters
@@ -137,11 +181,38 @@ class LineNotifier(Notifier):
             if production_fail, generate fail statement
         """
         if mode == "predict":
-            message = self.get_predict_body(app_element)
-        
+            message: str = self.get_predict_body(app_element)
+            
+        else:
+            message: str = app_element
         # Sent request
         requests.post(
             self.url, 
             headers=self.headers, 
             data = {'message':message},
         )
+    
+    #------------#
+    # Sent image #
+    #------------------------------------------------------------------------#
+    
+    def sent_image(self, image_path: str, message: str) -> None:
+        """Send file at line
+        
+        Parameters
+        ----------
+        file_path : str
+            Path of txt file
+        """
+        files = {'imageFile': open(image_path, 'rb')}
+        
+        requests.post(
+            self.url,
+            headers=self.headers,
+            data={'message': message},
+            files=files
+        )
+    
+    #------------------------------------------------------------------------#
+    
+#----------------------------------------------------------------------------#
