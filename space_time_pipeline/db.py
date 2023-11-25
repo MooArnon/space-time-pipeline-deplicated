@@ -375,13 +375,20 @@ class SQLDatabase:
     #------------------------------------------------------------------------#
     
     @database_connection
-    def exec_sql_file(self, file_path: str) -> pd.DataFrame:
+    def exec_sql(
+            self, 
+            mode: str, 
+            file_path: str = None, 
+            statement: str = None    
+    ) -> pd.DataFrame:
         """_summary_
 
         Parameters
         ----------
         path : str
             Path of .sql file
+        mode : str
+            if `file` then, input as path
 
         Returns
         -------
@@ -389,10 +396,15 @@ class SQLDatabase:
             result from fetching the cursor
         """
         # Read file
-        with open(file_path, 'r') as file:
-            query = file.read()
+        if mode == "file":
+            with open(file_path, 'r') as file:
+                query = file.read()
+                data = pd.read_sql_query(query, self.db)
+        
+        # Receive sql statement
+        elif mode == "statement":
+            query = statement
             data = pd.read_sql_query(query, self.db)
-
         return data
         
     #------------------------------------------------------------------------#
